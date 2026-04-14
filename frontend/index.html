@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI-powered food detection using Vision Transformer (ViT) — detect spoilage and AI-generated food images instantly with confidence scoring." />
+  <title>FoodAI Vision — Smart Food Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+  <!-- Animated background -->
+  <div class="bg-particles" id="bgParticles" aria-hidden="true"></div>
+  <div class="bg-aurora" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div class="header-inner">
+      <!-- Logo -->
+      <div class="logo" aria-label="FoodAI Vision Home">
+        <div class="logo-icon" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="18" stroke="url(#lg1)" stroke-width="2"/>
+            <path d="M12 20 C12 14 16 10 20 10 C24 10 28 14 28 20" stroke="url(#lg2)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="20" cy="22" r="5" fill="url(#lg3)"/>
+            <circle cx="14" cy="18" r="2" fill="#7c3aed" opacity="0.8"/>
+            <circle cx="26" cy="18" r="2" fill="#06b6d4" opacity="0.8"/>
+            <defs>
+              <linearGradient id="lg1" x1="2" y1="2" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+              <linearGradient id="lg2" x1="12" y1="10" x2="28" y2="20" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#a78bfa"/><stop offset="1" stop-color="#22d3ee"/>
+              </linearGradient>
+              <radialGradient id="lg3" cx="50%" cy="50%" r="50%">
+                <stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/>
+              </radialGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">FoodAI <span class="logo-accent">Vision</span></span>
+      </div>
+
+      <!-- Model status pill -->
+      <div class="model-status hidden" id="modelStatus" role="status" aria-label="Model status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Checking…</span>
+      </div>
+
+      <!-- Nav -->
+      <nav class="nav-chips" role="navigation" aria-label="Main navigation">
+        <span class="chip chip--active" id="navDetect" role="button" tabindex="0" aria-pressed="true">
+          <span class="chip-dot"></span>Detect
+        </span>
+        <span class="chip" id="navHistory" role="button" tabindex="0" aria-pressed="false">
+          History<span class="badge hidden" id="histBadge">0</span>
+        </span>
+        <a class="chip" href="/docs" target="_blank" rel="noopener noreferrer" aria-label="Open API documentation">
+          <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"/><path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"/></svg>
+          API Docs
+        </a>
+      </nav>
+    </div>
+
+    <!-- Live server stats bar -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stats-bar-inner">
+        <span class="sbar-item"><span class="sbar-label">Architecture</span><span class="sbar-val">ViT-B/16</span></span>
+        <span class="sbar-sep" aria-hidden="true">·</span>
+        <span class="sbar-item"><span class="sbar-label">Device</span><span class="sbar-val" id="sbarDevice">—</span></span>
+        <span class="sbar-sep" aria-hidden="true">·</span>
+        <span class="sbar-item"><span class="sbar-label">Total Predictions</span><span class="sbar-val" id="sbarPredictions">—</span></span>
+        <span class="sbar-sep" aria-hidden="true">·</span>
+        <span class="sbar-item"><span class="sbar-label">Uptime</span><span class="sbar-val" id="sbarUptime">—</span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main" id="mainContent">
+
+    <!-- Hero -->
+    <section class="hero" aria-labelledby="heroHeading">
+      <div class="hero-badge">
+        <span class="badge-dot pulse" aria-hidden="true"></span>
+        <span>Powered by Vision Transformer · PyTorch · FastAPI</span>
+      </div>
+      <h1 id="heroHeading" class="hero-title">
+        AI-Powered <span class="gradient-text">Food Intelligence</span>
+      </h1>
+      <p class="hero-subtitle">
+        Upload any food image and our ViT-B/16 model instantly classifies it — detecting spoilage patterns or AI-generated artifacts with millisecond-speed deep learning inference.
+      </p>
+      <div class="shortcut-hint" aria-label="Keyboard shortcut: Press V to upload">
+        <kbd>V</kbd> to upload &nbsp;·&nbsp; <kbd>Enter</kbd> to analyze &nbsp;·&nbsp; <kbd>Esc</kbd> to reset
+      </div>
+    </section>
+
+    <!-- ======= DETECT VIEW ======= -->
+    <div id="detectView">
+
+      <!-- Upload card -->
+      <section class="upload-section" aria-label="Image upload">
+        <div class="upload-card glass" id="uploadCard">
+
+          <!-- Drop zone -->
+          <div class="drop-zone" id="dropZone" role="button" tabindex="0"
+               aria-label="Image drop zone — click or drag a food image here">
+
+            <!-- Empty state -->
+            <div class="drop-zone-inner" id="dropZoneInner">
+              <div class="drop-icon" aria-hidden="true">
+                <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="10" y="22" width="60" height="44" rx="8" stroke="url(#dg1)" stroke-width="2"/>
+                  <circle cx="28" cy="36" r="6" stroke="url(#dg1)" stroke-width="2"/>
+                  <path d="M10 54 L26 38 L36 48 L50 34 L70 54" stroke="url(#dg1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+                  <path d="M40 8 L40 34 M32 16 L40 8 L48 16" stroke="url(#dg2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <defs>
+                    <linearGradient id="dg1" x1="10" y1="22" x2="70" y2="66" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#7c3aed"/><stop offset="1" stop-color="#06b6d4"/>
+                    </linearGradient>
+                    <linearGradient id="dg2" x1="40" y1="8" x2="40" y2="34" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#a78bfa"/><stop offset="1" stop-color="#22d3ee"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+              <p class="drop-title">Drop your food image here</p>
+              <p class="drop-subtitle">or <span class="link-btn" id="browseBtn" role="button" tabindex="0">browse files</span></p>
+              <p class="drop-formats">JPG · PNG · WEBP · GIF &nbsp;·&nbsp; Max 10 MB</p>
+            </div>
+
+            <!-- Preview state -->
+            <div class="preview-container hidden" id="previewContainer">
+              <!-- Scan line animation (shown during analysis) -->
+              <div class="scan-overlay hidden" id="scanOverlay" aria-hidden="true">
+                <div class="scan-line"></div>
+                <div class="scan-corners">
+                  <span class="sc sc-tl"></span>
+                  <span class="sc sc-tr"></span>
+                  <span class="sc sc-bl"></span>
+                  <span class="sc sc-br"></span>
+                </div>
+                <p class="scan-label">Analyzing…</p>
+              </div>
+              <img id="previewImg" src="" alt="Selected food image preview" class="preview-img"/>
+              <div class="preview-meta" id="previewMeta"></div>
+              <div class="preview-overlay">
+                <button class="remove-btn" id="removeBtn" aria-label="Remove image">
+                  <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                </button>
+                <span class="preview-name" id="previewName"></span>
+              </div>
+            </div>
+
+            <input id="imageInput" type="file" accept="image/*" class="file-input" aria-label="Select food image"/>
+          </div>
+
+          <!-- Analyze button -->
+          <button id="predictButton" class="predict-btn" disabled aria-label="Analyze image with AI">
+            <span class="btn-content" id="btnContent">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Analyze Image
+            </span>
+            <span class="btn-loader hidden" id="btnLoader" aria-hidden="true">
+              <span class="spinner"></span>Running Inference…
+            </span>
+          </button>
+
+        </div>
+      </section>
+
+      <!-- Result section -->
+      <section class="result-section hidden" id="resultSection" aria-label="Detection results" aria-live="polite">
+        <div class="result-card glass">
+
+          <!-- Result header -->
+          <div class="result-header">
+            <div class="result-badge" id="resultBadge">
+              <span id="resultIcon" aria-hidden="true">🔍</span>
+              <span id="resultLabel" class="result-label">Detection Result</span>
+            </div>
+            <div class="result-meta-group">
+              <span class="meta-chip" id="inferenceChip" hidden>
+                <svg viewBox="0 0 16 16" fill="currentColor" width="11" height="11" aria-hidden="true"><path d="M8 3.5a.5.5 0 00-1 0V9a.5.5 0 00.252.434l3.5 2a.5.5 0 00.496-.868L8 8.71V3.5z"/><path d="M8 16A8 8 0 108 0a8 8 0 000 16zm7-8A7 7 0 111 8a7 7 0 0114 0z"/></svg>
+                <span id="inferenceMs">—</span> ms
+              </span>
+              <span class="result-timestamp" id="resultTimestamp"></span>
+            </div>
+          </div>
+
+          <!-- Two-column layout: image + result -->
+          <div class="result-body">
+
+            <!-- Left: analyzed image -->
+            <div class="result-image-panel">
+              <img id="resultImg" src="" alt="Analyzed food image" class="result-img"/>
+              <div class="img-info-pills" id="imgInfoPills"></div>
+            </div>
+
+            <!-- Right: prediction details -->
+            <div class="result-details-panel">
+
+              <!-- Class tag + ring -->
+              <div class="prediction-top">
+                <span class="prediction-tag" id="predictionTag">—</span>
+                <div class="confidence-ring-wrapper" aria-label="Confidence meter">
+                  <svg class="confidence-ring" viewBox="0 0 120 120" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#7c3aed"/>
+                        <stop offset="100%" stop-color="#06b6d4"/>
+                      </linearGradient>
+                    </defs>
+                    <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                    <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="50"
+                            stroke-dasharray="314" stroke-dashoffset="314"/>
+                  </svg>
+                  <div class="ring-center">
+                    <span class="ring-pct" id="ringPct">0%</span>
+                    <span class="ring-lbl">confidence</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Probability bars -->
+              <div class="probabilities" aria-label="Class probability breakdown">
+                <p class="probabilities-title">Class Probabilities</p>
+                <div id="probabilityBars"></div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Interpretation -->
+          <div class="interpretation glass-inner" id="interpretationCard">
+            <div class="interp-icon" id="interpIcon" aria-hidden="true">ℹ️</div>
+            <div class="interp-text">
+              <strong id="interpTitle">Analysis Complete</strong>
+              <p id="interpDesc">Results shown above.</p>
+            </div>
+          </div>
+
+          <!-- Image metadata row -->
+          <div class="img-metadata-row glass-inner" id="imgMetaRow" hidden>
+            <div class="meta-item" id="metaFilename">
+              <span class="meta-label">File</span><span class="meta-val" id="metaFilenameVal">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Size</span><span class="meta-val" id="metaSizeVal">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Dimensions</span><span class="meta-val" id="metaDimsVal">—</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Format</span><span class="meta-val" id="metaFormatVal">—</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="result-actions">
+            <button class="reanalyze-btn" id="reanalyzeBtn" aria-label="Analyze another image">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+              Analyze Another
+            </button>
+            <button class="download-btn" id="downloadBtn" aria-label="Download JSON result">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+              Download JSON
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+    </div><!-- end detectView -->
+
+    <!-- ======= HISTORY VIEW ======= -->
+    <section class="history-section hidden" id="historySection" aria-label="Prediction history">
+      <div class="history-header">
+        <h2 class="section-title">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+          Prediction History
+        </h2>
+        <button class="clear-btn" id="clearHistoryBtn" aria-label="Clear all history">Clear All</button>
+      </div>
+      <div class="history-list" id="historyList" role="list">
+        <div class="history-empty" id="historyEmpty">
+          <svg viewBox="0 0 48 48" fill="none" width="48" height="48" aria-hidden="true"><rect x="8" y="12" width="32" height="28" rx="4" stroke="#334155" stroke-width="2"/><path d="M16 22h16M16 28h10" stroke="#334155" stroke-width="2" stroke-linecap="round"/></svg>
+          <p>No predictions yet. Analyze an image to build your history.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features section -->
+    <section class="features-section" aria-labelledby="featuresHeading">
+      <h2 class="section-title centered" id="featuresHeading">What We Detect</h2>
+      <div class="features-grid" role="list">
+
+        <article class="feature-card glass" role="listitem">
+          <div class="feature-icon-wrap feature-icon-wrap--orange" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M12 9v2m0 4h.01M5.07 19H19a2 2 0 001.75-2.98L13.74 4a2 2 0 00-3.48 0L4.26 16.02A2 2 0 005.07 19z" stroke="#f97316" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Spoilage Detection</h3>
+          <p>Identifies visual signs of food spoilage — mold, discoloration, and degradation patterns — using deep visual feature analysis via self-attention maps.</p>
+          <div class="feature-tags">
+            <span class="ftag ftag--orange">Mold Detection</span>
+            <span class="ftag ftag--orange">Color Analysis</span>
+            <span class="ftag ftag--orange">Texture Patterns</span>
+          </div>
+        </article>
+
+        <article class="feature-card glass" role="listitem">
+          <div class="feature-icon-wrap feature-icon-wrap--cyan" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><rect x="3" y="3" width="18" height="18" rx="3" stroke="#06b6d4" stroke-width="1.8"/><path d="M9 9l6 6M15 9l-6 6" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <h3>AI Image Detection</h3>
+          <p>Detects AI-generated food imagery by analyzing unnatural pixel patterns, GAN artifacts, and inconsistencies typical of diffusion and generative models.</p>
+          <div class="feature-tags">
+            <span class="ftag ftag--cyan">GAN Artifacts</span>
+            <span class="ftag ftag--cyan">Pixel Analysis</span>
+            <span class="ftag ftag--cyan">Authenticity Check</span>
+          </div>
+        </article>
+
+        <article class="feature-card glass" role="listitem">
+          <div class="feature-icon-wrap feature-icon-wrap--purple" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Vision Transformer</h3>
+          <p>Built on ViT-B/16 with 16×16 patch embeddings and multi-head self-attention that captures global context — outperforming CNN-based approaches on complex textures.</p>
+          <div class="feature-tags">
+            <span class="ftag ftag--purple">Self-Attention</span>
+            <span class="ftag ftag--purple">Patch Embeddings</span>
+            <span class="ftag ftag--purple">Transfer Learning</span>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="logo-text" style="font-size:1rem;">FoodAI <span class="logo-accent">Vision</span></span>
+        <span class="footer-divider" aria-hidden="true">·</span>
+        <span class="footer-sub">Intelligent Food Analysis</span>
+      </div>
+      <p class="footer-tech">Built with PyTorch &nbsp;·&nbsp; ViT-B/16 &nbsp;·&nbsp; FastAPI &nbsp;·&nbsp; Vanilla JS</p>
+      <div class="footer-links">
+        <a href="/docs" target="_blank" rel="noopener noreferrer">Swagger UI</a>
+        <a href="/redoc" target="_blank" rel="noopener noreferrer">ReDoc</a>
+        <a href="/health" target="_blank" rel="noopener noreferrer">Health</a>
+        <a href="/history" target="_blank" rel="noopener noreferrer">Server History</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

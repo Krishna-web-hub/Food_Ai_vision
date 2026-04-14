@@ -1,0 +1,13 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.sqlite3
+.env
+.git
+.gitignore
+__MACOSX
+*.log
+vit_food_detection_model.pth/
+vit_food_detection_model.pth.zip

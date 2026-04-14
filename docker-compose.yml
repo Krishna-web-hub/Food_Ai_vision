@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: food-detector-app
+    restart: unless-stopped
+    expose:
+      - "8000"
+    volumes:
+      # Mount the model file directly into the container so it doesn't need to be baked into the image
+      - ./backend/vit_food_detection_model.pth:/app/backend/vit_food_detection_model.pth:ro
+      # Optional: Mount frontend files if you want to update HTML/CSS/JS without rebuilding the image
+      # - ./frontend:/app/frontend:ro
+
+  nginx:
+    image: nginx:alpine
+    container_name: food-detector-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      # Uncomment the next line if you configure SSL (HTTPS)
+      # - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
