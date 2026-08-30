@@ -1,0 +1,40 @@
+{
+  "checkpoint": "artifacts/vit_head.pt",
+  "data_dir": "../PD-lab/dataset/test/spoilage_detection",
+  "n": 129,
+  "class_counts": {
+    "fresh": 99,
+    "spoiled": 30
+  },
+  "confusion_matrix": [
+    [
+      99,
+      0
+    ],
+    [
+      1,
+      29
+    ]
+  ],
+  "argmax_metrics": {
+    "fresh_recall": 1.0,
+    "fresh_precision": 0.99,
+    "fresh_f1": 0.995,
+    "spoiled_recall": 0.9667,
+    "spoiled_precision": 1.0,
+    "spoiled_f1": 0.9831,
+    "macro_f1": 0.989,
+    "accuracy": 0.9922
+  },
+  "policy": {
+    "abstain_threshold": 0.85,
+    "spoiled_threshold": 0.3,
+    "verdicts": {
+      "fresh": 96,
+      "spoiled": 31,
+      "uncertain": 2
+    },
+    "abstention_rate": 0.0155,
+    "spoiled_released_as_fresh": 0
+  }
+}
