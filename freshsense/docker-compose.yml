@@ -1,0 +1,25 @@
+services:
+  api:
+    build: .
+    image: freshsense:0.1.0
+    ports:
+      - "8000:8000"
+    environment:
+      FRESHSENSE_LOG_JSON: "true"
+      FRESHSENSE_LOG_LEVEL: "INFO"
+      FRESHSENSE_CHECKPOINT: "/app/artifacts/vit_head.pt"
+      # Unset by default: the service runs the offline explainer. Export
+      # ANTHROPIC_API_KEY in your shell to route explanations through Claude.
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz',timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp

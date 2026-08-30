@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+artifacts/*.pth
+artifacts/*.pt
+# the head-only checkpoint is 8 KB and makes the service runnable on clone
+!artifacts/vit_head.pt
+!artifacts/.gitkeep
+*.egg-info/
+dist/
+build/

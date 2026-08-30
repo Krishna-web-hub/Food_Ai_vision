@@ -16,6 +16,9 @@ This project is organized into separate frontend, backend, and nginx proxy servi
 - `nginx/` — Nginx reverse proxy configuration
   - `default.conf` — Nginx server block routing requests
 - `docker-compose.yml` — Docker orchestration for all services
+- `freshsense/` — a second, independent service around the same model: an
+  asymmetric safety policy, a retrieval-grounded explanation layer and a test
+  suite. See [freshsense/README.md](freshsense/README.md) and the section below.
 - `vit_food_detection_model.pth.zip` — The PyTorch model weights (requires extraction)
 
 ## Quick Start (Docker Compose)
@@ -93,3 +96,43 @@ The recommended way to run this application is via Docker Compose, which spins u
 - The backend restricts image uploads to a maximum of 10MB.
 - Nginx allows payloads up to 15MB.
 - The default detection classes supported by the provided ViT model are `ai_detection` and `spoilage_detection`.
+
+---
+
+## Two services, one model
+
+This repository holds two different things built on the same ViT classifier. They
+are deliberately separate.
+
+**`backend/` + `frontend/` + `nginx/`** is the deployed demo: upload an image,
+get a class and a confidence back. It is the shortest path from model to
+something you can click.
+
+**`freshsense/`** treats the same model as one component inside a system that has
+to be trusted:
+
+- **The decision policy is separate from the model.** Probabilities are not
+  verdicts. Spoilage is condemned on weak evidence, food is cleared only on
+  strong evidence, and the band between them abstains to a human. On the
+  held-out test split this takes spoiled items wrongly released from one to
+  **zero**, at a 1.6% referral rate.
+- **Explanations are grounded and guard-railed.** A retrieval layer over a
+  food-safety knowledge base supplies cited passages; anything the language
+  model returns is validated before it leaves the process, and an explanation
+  citing a source that was not retrieved is discarded rather than shown.
+- **It runs with no API key.** A deterministic offline explainer is a supported
+  mode, not a stub, which is what keeps the test suite hermetic.
+- **The checkpoint is 8 KB, not 343 MB.** Only the trained head is ours; the
+  backbone is public ImageNet weights.
+- 133 fast tests at 87% line coverage, a Dockerfile, and CI.
+
+Reported numbers and the model's limitations are in
+[freshsense/docs/MODEL_CARD.md](freshsense/docs/MODEL_CARD.md); the design
+reasoning is in
+[freshsense/docs/ARCHITECTURE.md](freshsense/docs/ARCHITECTURE.md).
+
+```bash
+cd freshsense
+pip install -e ".[dev]"
+freshsense assess path/to/food.jpg --hint "strawberries"
+```
